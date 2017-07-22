@@ -1,0 +1,20 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="Job prefix" field="prefix">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Send checkstyle" field="sendCheckStyle">
+    <f:checkbox />
+  </f:entry>
+  <f:entry title="Checkstyle metric name" field="checkstylePrefix">
+    <f:textbox />
+  </f:entry>
+  <f:entry title="Send PMD" field="sendPMD">
+    <f:checkbox />
+  </f:entry>
+
+  <f:entry title="PMD metric name" field="pmdPrefix">
+    <f:textbox />
+  </f:entry>
+</j:jelly>
