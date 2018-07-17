@@ -26,6 +26,9 @@ import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
+import hudson.tasks.junit.TestResultAction;
+import hudson.tasks.junit.TestResult;
+
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -38,17 +41,21 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
     private final String prefix;
     private Boolean sendCheckStyle = false;
     private Boolean sendPMD = false;
+	private Boolean sendJunit = false;
     private final String checkstylePrefix;
     private final String pmdPrefix;
+    private final String jUnitPrefix;
 
-    // Fields in global.jelly must match the parameter names in the "DataBoundConstructor"
+    // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public StatsdNotifier(String prefix, Boolean sendCheckStyle, boolean sendPMD, String checkstylePrefix, String pmdPrefix) {
+    public StatsdNotifier(String prefix, boolean sendCheckStyle, boolean sendPMD, boolean sendJunit, String checkstylePrefix, String pmdPrefix, String jUnitPrefix) {
         this.prefix = prefix;
         this.sendCheckStyle = sendCheckStyle;
         this.sendPMD = sendPMD;
+        this.sendJunit = sendJunit;
         this.checkstylePrefix = checkstylePrefix;
         this.pmdPrefix = pmdPrefix;
+		this.jUnitPrefix = jUnitPrefix;
     }
 
     public Boolean getSendCheckStyle() {
@@ -66,6 +73,14 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
     public void setSendPMD(Boolean sendPMD) {
         this.sendPMD = sendPMD;
     }
+	
+	public Boolean getSendJunit() {
+        return sendJunit;
+    }
+
+    public void setSendJunit(Boolean sendJunit) {
+        this.sendJunit = sendJunit;
+    }
 
     public String getCheckstylePrefix() {
         return checkstylePrefix;
@@ -75,9 +90,11 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
         return pmdPrefix;
     }
 
-    /**
-     * We'll use this from the {@code global.jelly}.
-     */
+	public String getJunitPrefix() {
+        return jUnitPrefix;
+    }
+
+    // We'll use this from the {@code global.jelly}.
     public String getPrefix() {
         return prefix;
     }
@@ -101,6 +118,10 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
 
         if (getSendPMD()) {
             handlePMDMetrics(build, client, logger);
+        }
+		
+		if (getSendJunit()) {
+            handleJunitMetrics(build, client, logger);
         }
     }
 
@@ -133,7 +154,25 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
             logger.println("Can not find checkstyle metrics to be sent to StatsD");
         }
     }
+	
+    private void handleJunitMetrics(Run<?, ?> build, StatsDClient client, PrintStream logger) {
+        if (!DescriptorImpl.isJunitInstalled()) {
+            logger.println("Junit metric can't be handled. Junit plugin is not installed");
+            return;
+        }
 
+        TestResultAction action = build.getAction(TestResultAction.class);
+        if (action != null) {
+            TestResult actualResult = action.getResult();
+
+            client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + "TotalTests", actualResult.getTotalCount());
+			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + "FailedTests", actualResult.getFailCount());
+			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + "SkippedTests", actualResult.getSkipCount());
+        } else {
+            logger.println("Can not find Junit metrics to be sent to StatsD");
+        }
+    }
+	
     private StatsDClient initClient(PrintStream logger) {
         DescriptorImpl descriptor = getDescriptor();
         String statsDHost = descriptor.getHost();
@@ -179,8 +218,7 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
     /**
      * Descriptor for {@link StatsdNotifier}. Used as a singleton.
      * The class is marked as public so that it can be accessed from views.
-     * <p>
-     * <p>
+     * 
      * See {@code src/main/resources/hudson/plugins/hello_world/StatsdNotifier/*.jelly}
      * for the actual HTML fragment for the configuration screen.
      */
@@ -188,6 +226,8 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher> {
         public static final String CHECKSTYLE = "checkstyle";
         public static final String PMD = "pmd";
+		public static final String JUNIT = "junit";
+
 
         public boolean isApplicable(Class<? extends AbstractProject> aClass) {
             // Indicates that this builder can be used with all kinds of project types 
@@ -200,6 +240,10 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
 
         public static boolean isPMDInstalled() {
             return PluginDescriptor.isPluginInstalled(PMD);
+        }
+		
+        public static boolean isJunitInstalled() {
+            return PluginDescriptor.isPluginInstalled(JUNIT);
         }
 
         /**
