@@ -171,9 +171,9 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".SkippedTests", actualResult.getSkipCount());
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".Duration" , durationInSecconds);
 			
-	        String duration = Util.getTimeSpanString(durationInSecconds);
-			logger.println("durata numerica " + durationInSecconds);
-			logger.println("durata = " + duration);
+//	        String duration = Util.getTimeSpanString(durationInSecconds);
+//			logger.println("durata numerica " + durationInSecconds);
+//			logger.println("durata = " + duration);
 
         } else {
             logger.println("Can not find Junit metrics to be sent to StatsD");
