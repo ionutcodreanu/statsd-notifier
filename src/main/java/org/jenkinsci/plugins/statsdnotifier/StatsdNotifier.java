@@ -164,16 +164,14 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
         TestResultAction action = build.getAction(TestResultAction.class);
         if (action != null) {
             TestResult actualResult = action.getResult();
-            long durationInSecconds = (System.currentTimeMillis() - build.getStartTimeInMillis()) / 1000;
+            long durationInSeconds = (System.currentTimeMillis() - build.getStartTimeInMillis()) / 1000;
             
             client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".TotalTests", actualResult.getTotalCount());
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".FailedTests", actualResult.getFailCount());
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".SkippedTests", actualResult.getSkipCount());
-			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".Duration" , durationInSecconds);
-			
-//	        String duration = Util.getTimeSpanString(durationInSecconds);
-//			logger.println("durata numerica " + durationInSecconds);
-//			logger.println("durata = " + duration);
+			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".BuildDuration" , durationInSeconds);
+
+//	        String duration = Util.getTimeSpanString(durationInSeconds);
 
         } else {
             logger.println("Can not find Junit metrics to be sent to StatsD");
