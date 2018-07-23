@@ -28,7 +28,7 @@ import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import hudson.tasks.junit.TestResultAction;
 import hudson.tasks.junit.TestResult;
-
+import hudson.Util;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -44,18 +44,18 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
 	private Boolean sendJunit = false;
     private final String checkstylePrefix;
     private final String pmdPrefix;
-    private final String jUnitPrefix;
+    private final String junitPrefix;
 
     // Fields in config.jelly must match the parameter names in the "DataBoundConstructor"
     @DataBoundConstructor
-    public StatsdNotifier(String prefix, boolean sendCheckStyle, boolean sendPMD, boolean sendJunit, String checkstylePrefix, String pmdPrefix, String jUnitPrefix) {
+    public StatsdNotifier(String prefix, boolean sendCheckStyle, boolean sendPMD, boolean sendJunit, String checkstylePrefix, String pmdPrefix, String junitPrefix) {
         this.prefix = prefix;
         this.sendCheckStyle = sendCheckStyle;
         this.sendPMD = sendPMD;
         this.sendJunit = sendJunit;
         this.checkstylePrefix = checkstylePrefix;
         this.pmdPrefix = pmdPrefix;
-		this.jUnitPrefix = jUnitPrefix;
+		this.junitPrefix = junitPrefix;
     }
 
     public Boolean getSendCheckStyle() {
@@ -91,7 +91,7 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
     }
 
 	public String getJunitPrefix() {
-        return jUnitPrefix;
+        return junitPrefix;
     }
 
     // We'll use this from the {@code global.jelly}.
@@ -164,10 +164,15 @@ public class StatsdNotifier extends Publisher implements SimpleBuildStep {
         TestResultAction action = build.getAction(TestResultAction.class);
         if (action != null) {
             TestResult actualResult = action.getResult();
-
+            long durationInSeconds = (System.currentTimeMillis() - build.getStartTimeInMillis()) / 1000;
+            
             client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".TotalTests", actualResult.getTotalCount());
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".FailedTests", actualResult.getFailCount());
 			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".SkippedTests", actualResult.getSkipCount());
+			client.recordGaugeValue(getPrefix() + "." + getJunitPrefix() + ".BuildDuration" , durationInSeconds);
+
+//	        String duration = Util.getTimeSpanString(durationInSeconds);
+
         } else {
             logger.println("Can not find Junit metrics to be sent to StatsD");
         }

@@ -19,7 +19,7 @@
   <f:entry title="Send Junit" field="sendJunit">
     <f:checkbox />
   </f:entry>
-  <f:entry title="Junit metric name" field="jUnitPrefix">
+  <f:entry title="Junit metric name" field="junitPrefix">
     <f:textbox />
   </f:entry>
 </j:jelly>
